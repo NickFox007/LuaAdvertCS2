@@ -1,6 +1,6 @@
 -- INFO FOR LOADER: beginning
 
-if LOADER_SETSCRIPTINFO ~= nil then LOADER_SETSCRIPTINFO("LuaAdvert", "Advertisiments for your server", "1.0", "Pisex & NF") end
+if LOADER_SETSCRIPTINFO ~= nil then LOADER_SETSCRIPTINFO("LuaAdvert", "Advertisiments for your server", "1.1", "Pisex & NF") end
 
 -- INFO FOR LOADER: end
 
@@ -13,14 +13,14 @@ local prefix
 
 local messages = {}
 
-function LoadAdvertsConfig()
+function Adverts_LoadAdvertsConfig()
 	local kv = LoadKeyValues("scripts/configs/adverts.ini")
 	
 	if kv ~= nil then
 		prefix = kv['Configs']['prefix']
 		duration = kv['Configs']['time']
 		for k, v in pairs(kv['Messages']) do
-			LoadAdvertAndList(v)
+			Adverts_LoadAdvertAndList(v)
 		end
 
 		return true
@@ -38,7 +38,7 @@ require('hudcore')
 
 local messages_count = 0
 
-function LoadAdvertAndList(message)
+function Adverts_LoadAdvertAndList(message)
 	messages[messages_count] = {}
 	for k,v in pairs(message) do
 		messages[messages_count][k] = v
@@ -48,37 +48,48 @@ end
 
 local messages_current = 0
 
-if localtimer ~= nil then Timers:RemoveTimer(localtimer) end
+if adverts_localtimer ~= nil then Timers:RemoveTimer(adverts_localtimer) end
 
-function ProcessAd(message)
-	
-	if message['type'] == "chat" then
-		HC_PrintChatAll(prefix .. message['text'])
-	else
-		if message['type'] == "panel" then
+function Adverts_ProcessAd(message)
+
+	local case = 
+	{
+		['chat'] = function()
+			HC_PrintChatAll(prefix .. message['text'])
+		end,
+		['panel'] = function()
 			HC_ShowPanelInfo(message['text'], message['duration'])
-		else
-			if message['type'] == "center" then
-				HC_PrintCenterTextAll(message['text'])
-			end
+		end,
+		['center'] = function()
+			HC_PrintCenterTextAll(message['text'])		
+		end,
+		['instr_hint'] = function()
+			--HC_PrintCenterTextAll(message['text'])
+			HC_ShowInstructorHint(message['text'], message['duration'], message['icon'])
 		end
-	end	
+	}	
+	
+	if case[message['type']] then
+		case[message['type']]()
+	else
+		print("Found message type '" .. message['type'] .. "' but it's not valid")
+	end
 end
 
-function PrintAd()
-	ProcessAd(messages[messages_current])
+function Adverts_PrintAd()
+	Adverts_ProcessAd(messages[messages_current])
 	messages_current = messages_current + 1
 	if messages_current == messages_count then
 		messages_current = 0
 	end	
 end
 
-if LoadAdvertsConfig() then
+if Adverts_LoadAdvertsConfig() then
 
-	localtimer = Timers:CreateTimer({
+	adverts_localtimer = Timers:CreateTimer({
 		endTime = duration,
 		callback = function()
-			PrintAd()    
+			Adverts_PrintAd()    
 			return duration
 		end
 	})
