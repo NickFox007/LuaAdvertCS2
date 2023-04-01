@@ -33,7 +33,7 @@ end
 
 -- CONFIGURATION: end
 
-require('timers')
+require "libs.timers"
 require('hudcore')
 
 local messages_count = 0
